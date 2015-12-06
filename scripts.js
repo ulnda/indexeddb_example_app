@@ -5,22 +5,20 @@
 
   var db;
 
-  var current_view_pub_key;
-
   function openDb() {
     var req = indexedDB.open(DB_NAME, DB_VERSION);
 
-    req.onsuccess = function (evt) {
+    req.onsuccess = function (e) {
       db = this.result;
     };
 
-    req.onerror = function (evt) {
-      console.error("openDb:", evt.target.errorCode);
+    req.onerror = function (e) {
+      displayActionFailure(this.error);
     };
 
-    req.onupgradeneeded = function (evt) {
+    req.onupgradeneeded = function (e) {
 
-      var store = evt.currentTarget.result.createObjectStore(
+      var store = e.currentTarget.result.createObjectStore(
         DB_STORE_NAME, { keyPath: 'id', autoIncrement: true }
       );
 
@@ -30,75 +28,88 @@
     };
   }
 
-  function getObjectStore(store_name, mode) {
-    var tx = db.transaction(store_name, mode);
-    return tx.objectStore(store_name);
+  function getObjectStore(storeName, mode) {
+    return db.transaction(storeName, mode).objectStore(storeName);
   }
 
-  function clearObjectStore(store_name) {
+  function clearObjectStore() {
     var store = getObjectStore(DB_STORE_NAME, 'readwrite');
     var req = store.clear();
-    req.onsuccess = function(evt) {
+
+    req.onsuccess = function(e) {
       displayActionSuccess("Store cleared");
       displayPubList(store);
     };
-    req.onerror = function (evt) {
-      console.error("clearObjectStore:", evt.target.errorCode);
+
+    req.onerror = function (e) {
       displayActionFailure(this.error);
     };
   }
 
   function displayPubList(store) {
-    console.log("displayPubList");
-
-    if (typeof store == 'undefined')
+    clearPublicationsList()
+    
+    if (typeof store == 'undefined') {
       store = getObjectStore(DB_STORE_NAME, 'readonly');
+    }
 
-    var pub_msg = $('#pub-msg');
-    pub_msg.empty();
-    var pub_list = $('#pub-list');
-    pub_list.empty();
+    var req = store.count();
 
-    var req;
-    req = store.count();
-
-    req.onsuccess = function(evt) {
-      pub_msg.append('<p>There are <strong>' + evt.target.result +
-                     '</strong> record(s) in the object store.</p>');
+    req.onsuccess = function(e) {
+      addPublicationsCountMessage(e.target.result)
     };
-    req.onerror = function(evt) {
-      console.error("add error", this.error);
+
+    req.onerror = function(e) {
       displayActionFailure(this.error);
     };
 
-    var i = 0;
     req = store.openCursor();
-    req.onsuccess = function(evt) {
-      var cursor = evt.target.result;
+
+    req.onsuccess = function(e) {
+      var cursor = e.target.result;
 
       if (cursor) {
-        console.log("displayPubList cursor:", cursor);
         req = store.get(cursor.key);
-        req.onsuccess = function (evt) {
-          var value = evt.target.result;
-          var list_item = $('<li>' +
-                            '[' + cursor.key + '] ' +
-                            '(biblioid: ' + value.biblioid + ') ' +
-                            value.title +
-                            '</li>');
-          if (value.year != null)
-            list_item.append(' - ' + value.year);
 
-          pub_list.append(list_item);
+        req.onsuccess = function (e) {
+          var value = e.target.result;
+          addPublicationsListItem(cursor.key, value.biblioid, value.title, 
+            value.year)
         };
 
         cursor.continue();
-
-        i++;
-      } else {
-        console.log("No more entries");
       }
     };
+  }
+
+  function clearPublicationsList() {
+    var pubMessages = $('#publications-messages');
+    var pubList = $('#publications-list');
+
+    pubMessages.empty();
+    pubList.empty();
+  }
+
+  function addPublicationsListItem(key, biblioid, title, year) {
+    var pubList = $('#publications-list');
+
+    var listItem = $('<li>' +
+                     '[' + key + '] ' +
+                     '(biblioid: ' + biblioid + ') ' +
+                     title +
+                     '</li>');
+
+    if (year != null) {
+      listItem.append(' - ' + year);
+    }
+
+    pubList.append(listItem);
+  }
+
+  function addPublicationsCountMessage(count) {
+    var pubMessages = $('#publications-messages');
+    pubMessages.append('<p>There are <strong>' + count +
+      '</strong> record(s) in the object store.</p>');
   }
 
   function addPublication(biblioid, title, year) {
@@ -107,7 +118,7 @@
     var store = getObjectStore(DB_STORE_NAME, 'readwrite');
     var req = store.add(obj);
 
-    req.onsuccess = function (evt) {
+    req.onsuccess = function (e) {
       displayActionSuccess();
       displayPubList(store);
     };
@@ -117,53 +128,53 @@
     };
   }
 
-  function deletePublicationFromBib(biblioid) {
-    console.log("deletePublication:", arguments);
+  function deletePublicationByBib(biblioid) {
     var store = getObjectStore(DB_STORE_NAME, 'readwrite');
     var req = store.index('biblioid');
-    req.get(biblioid).onsuccess = function(evt) {
-      if (typeof evt.target.result == 'undefined') {
+
+    req.get(biblioid).onsuccess = function(e) {
+      if (typeof e.target.result == 'undefined') {
         displayActionFailure("No matching record found");
         return;
       }
-      deletePublication(evt.target.result.id, store);
+
+      deletePublication(e.target.result.id, store);
     };
-    req.onerror = function (evt) {
-      console.error("deletePublicationFromBib:", evt.target.errorCode);
+
+    req.onerror = function (e) {
+      displayActionFailure(this.error);
     };
   }
 
   function deletePublication(key, store) {
-    console.log("deletePublication:", arguments);
-
     if (typeof store == 'undefined')
       store = getObjectStore(DB_STORE_NAME, 'readwrite');
 
     var req = store.get(key);
-    req.onsuccess = function(evt) {
-      var record = evt.target.result;
-      console.log("record:", record);
+
+    req.onsuccess = function(e) {
+      var record = e.target.result;
+
       if (typeof record == 'undefined') {
         displayActionFailure("No matching record found");
         return;
       }
 
       req = store.delete(key);
-      req.onsuccess = function(evt) {
-        console.log("evt:", evt);
-        console.log("evt.target:", evt.target);
-        console.log("evt.target.result:", evt.target.result);
-        console.log("delete successful");
+
+      req.onsuccess = function(e) {
         displayActionSuccess("Deletion successful");
         displayPubList(store);
       };
-      req.onerror = function (evt) {
-        console.error("deletePublication:", evt.target.errorCode);
+
+      req.onerror = function (e) {
+        displayActionFailure(this.error);
       };
     };
-    req.onerror = function (evt) {
-      console.error("deletePublication:", evt.target.errorCode);
-      };
+
+    req.onerror = function (e) {
+      displayActionFailure(this.error);
+    };
   }
 
   function displayActionSuccess(msg) {
@@ -175,35 +186,33 @@
     $('#msg').html('<span class="action-failure">' + msg + '</span>');
   }
   function resetActionStatus() {
-    console.log("resetActionStatus ...");
     $('#msg').empty();
-    console.log("resetActionStatus DONE");
   }
 
   function addEventListeners() {
-    console.log("addEventListeners");
-
     $('#register-form-reset').click(function(evt) {
       resetActionStatus();
     });
 
     $('#add-button').click(function(evt) {
-      console.log("add ...");
       var title = $('#pub-title').val();
       var biblioid = $('#pub-biblioid').val();
+
       if (!title || !biblioid) {
         displayActionFailure("Required field(s) missing");
         return;
       }
+
       var year = $('#pub-year').val();
       if (year != '') {
-        // Better use Number.isInteger if the engine has EcmaScript 6
         if (isNaN(year))  {
           displayActionFailure("Invalid year");
           return;
         }
+
         year = Number(year);
-      } else {
+      } 
+      else {
         year = null;
       }
 
@@ -211,18 +220,18 @@
     });
 
     $('#delete-button').click(function(evt) {
-      console.log("delete ...");
       var biblioid = $('#pub-biblioid-to-delete').val();
       var key = $('#key-to-delete').val();
 
       if (biblioid != '') {
-        deletePublicationFromBib(biblioid);
-      } else if (key != '') {
-        // Better use Number.isInteger if the engine has EcmaScript 6
-        if (key == '' || isNaN(key))  {
+        deletePublicationByBib(biblioid);
+      } 
+      else if (key != '') {
+        if (isNaN(key))  {
           displayActionFailure("Invalid key");
           return;
         }
+
         key = Number(key);
         deletePublication(key);
       }
@@ -232,11 +241,9 @@
       clearObjectStore();
     });
 
-    var search_button = $('#search-list-button');
-    search_button.click(function(evt) {
+    $('#search-list-button').click(function(evt) {
       displayPubList();
     });
-
   }
 
   openDb();
