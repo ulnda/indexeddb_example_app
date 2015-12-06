@@ -6,7 +6,7 @@
   <body>
     <h1>Library application</h1>
 
-    <div id="msg">
+    <div id="result-message">
     </div>
 
     <form id="register-form">
@@ -14,33 +14,33 @@
         <tbody>
           <tr>
             <td>
-              <label for="pub-title" class="required">
+              <label for="publication-title" class="required">
                 Title:
               </label>
             </td>
             <td>
-              <input type="text" id="pub-title" name="pub-title" />
+              <input type="text" id="publication-title" name="publication-title" />
             </td>
           </tr>
           <tr>
             <td>
-              <label for="pub-biblioid" class="required">
+              <label for="publication-biblioid" class="required">
                 Bibliographic ID:<br/>
                 <span class="note">(ISBN, ISSN, etc.)</span>
               </label>
             </td>
             <td>
-              <input type="text" id="pub-biblioid" name="pub-biblioid"/>
+              <input type="text" id="publication-biblioid" name="publication-biblioid"/>
             </td>
           </tr>
           <tr>
             <td>
-              <label for="pub-year">
+              <label for="publication-year">
                 Year:
               </label>
             </td>
             <td>
-              <input type="number" id="pub-year" name="pub-year" />
+              <input type="number" id="publication-year" name="publication-year" />
             </td>
           </tr>
         </tbody>
@@ -52,7 +52,7 @@
       </div>
     </form>
 
-    <form id="delete-form">
+    <form id="delete-form" class="with-margin">
       <table>
         <tbody>
           <tr>
@@ -88,12 +88,14 @@
       </div>
     </form>
 
-    <form id="search-form">
+    <form id="search-form" class="with-margin">
       <div class="button-pane">
         <input type="button" id="search-list-button"
                value="List database content" />
       </div>
     </form>
+
+    <div class="clear"></div>
 
     <div>
       <div id="publications-messages">

@@ -48,7 +48,7 @@
 
   function displayPubList(store) {
     clearPublicationsList()
-    
+
     if (typeof store == 'undefined') {
       store = getObjectStore(DB_STORE_NAME, 'readonly');
     }
@@ -179,14 +179,14 @@
 
   function displayActionSuccess(msg) {
     msg = typeof msg != 'undefined' ? "Success: " + msg : "Success";
-    $('#msg').html('<span class="action-success">' + msg + '</span>');
+    $('#result-message').html('<span class="action-success">' + msg + '</span>');
   }
   function displayActionFailure(msg) {
     msg = typeof msg != 'undefined' ? "Failure: " + msg : "Failure";
-    $('#msg').html('<span class="action-failure">' + msg + '</span>');
+    $('#result-message').html('<span class="action-failure">' + msg + '</span>');
   }
   function resetActionStatus() {
-    $('#msg').empty();
+    $('#result-message').empty();
   }
 
   function addEventListeners() {
@@ -195,15 +195,15 @@
     });
 
     $('#add-button').click(function(evt) {
-      var title = $('#pub-title').val();
-      var biblioid = $('#pub-biblioid').val();
+      var title = $('#publication-title').val();
+      var biblioid = $('#publication-biblioid').val();
 
       if (!title || !biblioid) {
         displayActionFailure("Required field(s) missing");
         return;
       }
 
-      var year = $('#pub-year').val();
+      var year = $('#publication-year').val();
       if (year != '') {
         if (isNaN(year))  {
           displayActionFailure("Invalid year");
@@ -220,7 +220,7 @@
     });
 
     $('#delete-button').click(function(evt) {
-      var biblioid = $('#pub-biblioid-to-delete').val();
+      var biblioid = $('#publication-biblioid-to-delete').val();
       var key = $('#key-to-delete').val();
 
       if (biblioid != '') {
